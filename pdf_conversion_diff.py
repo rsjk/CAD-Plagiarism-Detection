@@ -71,7 +71,9 @@ def compareImages(basepath, image1, image2, fuzz):
                            math.floor(px[i,j][2]*.75))
                 
     print("        Number of pixels that differ:", diffpixelcount)
-    print("        Ratio of different pixels to total pixels:", diffpixelcount/(im.size[0]*im.size[1]))
+    total_pixels = im.size[0]*im.size[1]
+    print("        Ratio of different pixels to total pixels:", diffpixelcount/total_pixels)
+    print("        Ratio of similarity:", ((im.size[0]*im.size[1]) - diffpixelcount)/total_pixels)
 
     # Make diff directory
     try:
