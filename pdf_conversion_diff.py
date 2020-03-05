@@ -1,6 +1,7 @@
 from PIL import Image
 import math
 import os
+import subprocess
 import tkinter
 from tkinter.filedialog import askdirectory
 from pdf2image import convert_from_path
@@ -18,7 +19,7 @@ def checkFileType(path):
 
 def convertToImage(basepath, save_path, pdf):
     # Must convert to jpg
-    pages = convert_from_path(basepath + "/" + pdf)
+    pages = convert_from_path(basepath + "/" + pdf, dpi=100)
     
     image = pdf.replace('PDF', 'jpg')
     new_path = save_path + "/" + image
@@ -36,8 +37,9 @@ def comparePixels(px1, px2, num):
             same = False
     return same
 
-def compareImages(basepath, image1, image2, fuzz):
+def compareImages(basepath, image1, image2, fuzz, log_file):
     print("Computing difference between", image1, "and", image2)
+    print("Computing difference between", image1, "and", image2, file = log_file)
     #Open first image
     im = Image.open(basepath + "/" + image1)
     #print(im.format, im.size, im.mode)
@@ -72,6 +74,10 @@ def compareImages(basepath, image1, image2, fuzz):
                 
     print("        Number of pixels that differ:", diffpixelcount)
     print("        Ratio of different pixels to total pixels:", diffpixelcount/(im.size[0]*im.size[1]))
+    print("        Ratio of similarity:", ((im.size[0]*im.size[1]) - diffpixelcount)/total_pixels)
+    print("        Number of pixels that differ:", diffpixelcount, file = log_file)
+    print("        Ratio of different pixels to total pixels:", diffpixelcount/(im.size[0]*im.size[1]), file = log_file)
+    print("        Ratio of similarity:", ((im.size[0]*im.size[1]) - diffpixelcount)/total_pixels, file = log_file)
 
     # Make diff directory
     try:
@@ -114,12 +120,18 @@ for entry in os.listdir(folderpath):
 fuzz = int(input("Enter fuzz: "))
 processed = []
 
+log_file = open('log_file.txt', 'w')
+
 # Compare the images
 for entry in os.listdir(images_path):
     if os.path.isfile(os.path.join(images_path, entry)):
         for entry2 in os.listdir(images_path):
-            #print("Entry 1:", entry, "    Entry 2:", entry2)
             if os.path.isfile(os.path.join(images_path, entry2)) and entry != entry2 and frozenset((entry, entry2)) not in processed:
-                compareImages(images_path, entry, entry2, fuzz)
+                compareImages(images_path, entry, entry2, fuzz, log_file)
+                result = subprocess.run(["pyssim", "--cw", os.path.join(images_path, entry), os.path.join(images_path, entry2)], capture_output=True, universal_newlines=True)
+                print("CW-SSIM: ", (float)(result.stdout))
+                print("CW-SSIM: ", (float)(result.stdout), file = log_file)
                 processed.append(frozenset((entry, entry2)))
                 #print("Processed pairs:", processed)
+
+log_file.close()
