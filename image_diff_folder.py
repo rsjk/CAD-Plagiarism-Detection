@@ -3,6 +3,7 @@ import math
 import os
 import tkinter
 from tkinter.filedialog import askdirectory
+import subprocess
 
 def comparePixels(px1, px2, num):
     same = True
@@ -67,12 +68,15 @@ print(folderpath)
 #fuzz input
 fuzz = int(input("Enter fuzz: "))
 processed = []
+# Compare the images
 for entry in os.listdir(folderpath):
     if os.path.isfile(os.path.join(folderpath, entry)):
         for entry2 in os.listdir(folderpath):
             #print("Entry 1:", entry, "    Entry 2:", entry2)
             if os.path.isfile(os.path.join(folderpath, entry2)) and entry != entry2 and frozenset((entry, entry2)) not in processed:
                 compareImages(folderpath, entry, entry2, fuzz)
+                result = subprocess.run(["pyssim", "--cw", os.path.join(folderpath, entry), os.path.join(folderpath, entry2)], capture_output=True, universal_newlines=True)
+                print("CW-SSIM: " + (float)(result.stdout))
                 processed.append(frozenset((entry, entry2)))
                 #print("Processed pairs:", processed)
             
