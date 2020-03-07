@@ -8,6 +8,7 @@ import filetype
 import shutil
 import numpy as np
 import cv2
+import time
 
 def Nmaxelements(list1, N): 
     final_list = []
@@ -18,8 +19,8 @@ def Nmaxelements(list1, N):
           
         for j in range(len(list1)):
             if list1[j][1] > max1: 
-                max1 = list1[j][1];
-                num = list1[j][0];
+                max1 = list1[j][1]
+                num = list1[j][0]
                   
         list1.remove((num,max1)); 
         final_list.append((num,max1))
@@ -127,10 +128,13 @@ def compareSubimages(basepath, image1, image2):
     for i in BiggestContours:
         x,y,w,h = cv2.boundingRect(contours[i[0]])
         crop_img = im[y:y+h, x:x+w]
-        res = cv2.matchTemplate(im2, crop_img, cv2.TM_CCOEFF_NORMED)
+        #res = cv2.matchTemplate(im2, crop_img, cv2.TM_CCOEFF_NORMED)
+        #res = cv2.matchTemplate(im2, crop_img, cv2.TM_CCORR_NORMED)
+        res = cv2.matchTemplate(im2, crop_img, cv2.TM_SQDIFF_NORMED)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
         #print(min_val, max_val, min_loc, max_loc)
-        average_similarity = average_similarity + max_val
+        #average_similarity = average_similarity + max_val
+        average_similarity = average_similarity + (1.0 - min_val)
         
     average_similarity = average_similarity/len(BiggestContours)
     return average_similarity
@@ -167,12 +171,16 @@ for entry in os.listdir(folderpath):
 processed = []
 
 # Compare the images
+logFile = open("log_" + time.strftime("%Y-%m-%d-%H-%M-%S") + ".csv", "a")
 for entry in os.listdir(images_path):
     if os.path.isfile(os.path.join(images_path, entry)):
         for entry2 in os.listdir(images_path):
             #print("Entry 1:", entry, "    Entry 2:", entry2)
             if os.path.isfile(os.path.join(images_path, entry2)) and entry != entry2 and frozenset((entry, entry2)) not in processed:
                 #compareImages(images_path, entry, entry2, fuzz)
-                print(entry, entry2, 'comparison:', compareSubimages(images_path, entry, entry2))               
+                print(entry, entry2, 'comparision: ', compareSubimages(images_path, entry, entry2))               
+                logFile.write(entry + ',' + entry2 + ',' + str(compareSubimages(images_path, entry, entry2)) + '\n')
+                logFile.flush()
                 processed.append(frozenset((entry, entry2)))
                 #print("Processed pairs:", processed)
+logFile.close()
