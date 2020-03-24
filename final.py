@@ -11,23 +11,6 @@ import cv2
 import time
 from random import randint
 
-def Nmaxelements(list1, N): 
-    final_list = []
-    
-    for i in range(0, N):  
-        max1 = 0
-        num = 0
-          
-        for j in range(len(list1)):
-            if list1[j][1] > max1: 
-                max1 = list1[j][1]
-                num = list1[j][0]
-                  
-        list1.remove((num,max1)); 
-        final_list.append((num,max1))
-        
-    return final_list
-
 def checkFileType(path):
     # Check file type
     kind = filetype.guess(path)
@@ -43,10 +26,40 @@ def convertToImage(basepath, save_path, pdf):
     
     image = pdf.replace('PDF', 'jpg')
     new_path = save_path + "/" + image
-    #print('new path: ' + new_path)
 
     for page in pages:   
         page.save(new_path, 'JPEG')
+
+def convertToImages(folder_path, images_path):
+    # Loop through directory, converting PDFs to JPGs
+    for entry in os.listdir(folder_path):
+        path = os.path.join(folder_path, entry)
+        if os.path.isfile(path):
+            # Check file type
+            if checkFileType(path) == 'jpg':
+                shutil.copy2(path, images_path)
+            elif  checkFileType(path) == 'pdf':
+                # Must convert to jpg
+                convertToImage(folder_path, images_path, entry)
+            else:
+                print('File type not supported')
+
+def Nmaxelements(list1, N): 
+    final_list = []
+    
+    for i in range(0, N):  
+        max1 = 0
+        num = 0
+          
+        for j in range(len(list1)):
+            if list1[j][1] > max1: 
+                max1 = list1[j][1]
+                num = list1[j][0]
+                  
+        list1.remove((num,max1))
+        final_list.append((num,max1))
+        
+    return final_list
 
 def compareSubimages(basepath, image1, image2):
     im = cv2.imread(basepath + "/" + image1)
@@ -84,26 +97,29 @@ def compareSubimages(basepath, image1, image2):
     average_similarity = average_similarity/len(BiggestContours)
     return average_similarity
 
-def convertToImages(folder_path, images_path):
-    # Loop through directory, converting PDFs to JPGs
-    for entry in os.listdir(folder_path):
-        path = os.path.join(folder_path, entry)
-        if os.path.isfile(path):
-            # Check file type
-            if checkFileType(path) == 'jpg':
-                shutil.copy2(path, images_path)
-            elif  checkFileType(path) == 'pdf':
-                # Must convert to jpg
-                convertToImage(folder_path, images_path, entry)
-            else:
-                print('File type not supported')
-
+def compareImages(images_path):
+    # To keep track of processed images
+    processed = []
+    # Create log file
+    logFile = open("log_" + time.strftime("%Y-%m-%d-%H-%M-%S") + ".csv", "a")
+    for entry in os.listdir(images_path):
+        if os.path.isfile(os.path.join(images_path, entry)):
+            for entry2 in os.listdir(images_path):
+                if os.path.isfile(os.path.join(images_path, entry2)) and entry != entry2 and frozenset((entry, entry2)) not in processed:
+                    average_similarity = compareSubimages(images_path, entry, entry2)
+                    print(entry, entry2, 'comparison: ', average_similarity)               
+                    logFile.write(entry + ',' + entry2 + ',' + str(average_similarity) + '\n')
+                    logFile.flush()
+                    processed.append(frozenset((entry, entry2)))
+    # Delete images folder
+    shutil.rmtree(images_path)
+    # Close log file
+    logFile.close()
 
 if __name__ == '__main__':
+    # Let user to choose a folder
     root = tkinter.Tk()
     root.withdraw()
-
-    # Open Folder
     folder_path = askdirectory()
     
     # Make path to images folder. Tag on date and time for uniqueness.
@@ -114,20 +130,5 @@ if __name__ == '__main__':
     convertToImages(folder_path, images_path)
 
     # Compare the images
-    processed = []
-    logFile = open("log_" + time.strftime("%Y-%m-%d-%H-%M-%S") + ".csv", "a")
-    for entry in os.listdir(images_path):
-        if os.path.isfile(os.path.join(images_path, entry)):
-            for entry2 in os.listdir(images_path):
-                print("Entry 1:", entry, "    Entry 2:", entry2)
-                if os.path.isfile(os.path.join(images_path, entry2)) and entry != entry2 and frozenset((entry, entry2)) not in processed:
-                    average_similarity = compareSubimages(images_path, entry, entry2)
-                    print(entry, entry2, 'comparison: ', average_similarity)               
-                    logFile.write(entry + ',' + entry2 + ',' + str(average_similarity) + '\n')
-                    logFile.flush()
-                    processed.append(frozenset((entry, entry2)))
-                    #print("Processed pairs:", processed)
-    # delete images folder
-    shutil.rmtree(images_path)
-
-    logFile.close()
+    compareImages(images_path)
+ 
