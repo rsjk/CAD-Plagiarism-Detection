@@ -86,13 +86,9 @@ def compareSubimages(basepath, image1, image2):
     for i in BiggestContours:
         x,y,w,h = cv2.boundingRect(contours[i[0]])
         crop_img = im[y:y+h, x:x+w]
-        #res = cv2.matchTemplate(im2, crop_img, cv2.TM_CCOEFF_NORMED)
-        #res = cv2.matchTemplate(im2, crop_img, cv2.TM_CCORR_NORMED)
-        res = cv2.matchTemplate(im2, crop_img, cv2.TM_SQDIFF_NORMED)
+        res = cv2.matchTemplate(im2, crop_img, cv2.TM_CCOEFF_NORMED)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-        #print(min_val, max_val, min_loc, max_loc)
-        #average_similarity = average_similarity + max_val
-        average_similarity = average_similarity + (1.0 - min_val)
+        average_similarity = average_similarity + max_val
         
     average_similarity = average_similarity/len(BiggestContours)
     return average_similarity
