@@ -197,6 +197,7 @@ class CPDApp(Tk):
                         
                         if average_similarity >= 0.774:
                             self.sus_listbox.insert('end', inner_list)
+                            self.update()
 
                         # Mark as processed
                         processed.append(frozenset((entry, entry2)))
