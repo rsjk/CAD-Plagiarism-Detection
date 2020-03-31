@@ -10,6 +10,21 @@ import numpy as np
 import cv2
 import time
 from random import randint
+import tarfile
+import os
+from google_drive_downloader import GoogleDriveDownloader as gdd
+
+def setupEnvironment():
+    if(not os.path.isdir('C:\poppler-0.68.0')):
+        gdd.download_file_from_google_drive(file_id='1iytA1n2z4go3uVCwE__vIKouTKyIDjEq',
+                                    dest_path='./data/mnist.zip',
+                                    unzip=True)
+        os.remove("poppler")
+
+    path = "C:\poppler-0.68.0\\bin"
+
+    os.environ["PATH"] += os.pathsep + path
+    print(os.environ.get("PATH"))
 
 def checkFileType(path):
     # Check file type
@@ -103,9 +118,12 @@ def compareImages(images_path):
             for entry2 in os.listdir(images_path):
                 if os.path.isfile(os.path.join(images_path, entry2)) and entry != entry2 and frozenset((entry, entry2)) not in processed:
                     average_similarity = compareSubimages(images_path, entry, entry2)
-                    print(entry, entry2, 'comparison: ', average_similarity)               
-                    logFile.write(entry + ',' + entry2 + ',' + str(average_similarity) + '\n')
-                    logFile.flush()
+                    if(average_similarity >= .774):
+                        logFile.write(entry + ',' + entry2 + ', Suspicious' + '\n')
+                        logFile.flush()
+                    #print(entry, entry2, 'comparison: ', average_similarity)               
+                    #logFile.write(entry + ',' + entry2 + ',' + str(average_similarity) + '\n')
+                    #logFile.flush()
                     processed.append(frozenset((entry, entry2)))
     # Delete images folder
     shutil.rmtree(images_path)
@@ -113,6 +131,7 @@ def compareImages(images_path):
     logFile.close()
 
 if __name__ == '__main__':
+    setupEnvironment()
     # Let user to choose a folder
     root = tkinter.Tk()
     root.withdraw()
