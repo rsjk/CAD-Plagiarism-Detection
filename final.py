@@ -24,7 +24,7 @@ def setupEnvironment():
     path = "C:\poppler-0.68.0\\bin"
 
     os.environ["PATH"] += os.pathsep + path
-    print(os.environ.get("PATH"))
+    #print(os.environ.get("PATH"))
 
 def checkFileType(path):
     # Check file type
@@ -121,7 +121,7 @@ def compareImages(images_path):
                     if(average_similarity >= .774):
                         logFile.write(entry + ',' + entry2 + ', Suspicious' + '\n')
                         logFile.flush()
-                    #print(entry, entry2, 'comparison: ', average_similarity)               
+                    print(entry, entry2, 'comparison: ', average_similarity)               
                     #logFile.write(entry + ',' + entry2 + ',' + str(average_similarity) + '\n')
                     #logFile.flush()
                     processed.append(frozenset((entry, entry2)))
