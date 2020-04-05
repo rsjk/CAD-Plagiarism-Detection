@@ -1,7 +1,7 @@
 from PIL import ImageTk, Image
 from pdf2image import convert_from_path
 from random import randint
-from tkinter import Button, filedialog, Frame, Label, Listbox, Tk
+from tkinter import Button, filedialog, Frame, Label, Listbox, messagebox, Tk
 import cv2
 import filetype
 import math
@@ -20,24 +20,20 @@ class CPDApp(Tk):
         frame.pack()
 
         sus_label = Label(frame, text='Suspicious Pairs')
-        sus_label.grid(row=0, column=0)
-        #images_label = Label(frame, text='Files')
-        #images_label.grid(row=0, column=1, columnspan=2)
+        sus_label.grid(row=0, column=0, columnspan=2)
 
         self.sus_listbox = Listbox(frame, width=30, height=20, selectmode='single')
-        self.sus_listbox.grid(row=1, column=0)
+        self.sus_listbox.grid(row=1, column=0, columnspan=2)
         self.sus_listbox.bind('<<ListboxSelect>>', self.displayImage)
 
-        #self.canvas1 = Canvas(frame, width = 300, height = 300, bg='gray')
-        #self.canvas1.grid(row=1, column=1)
-
-        #self.canvas2 = Canvas(frame, width = 300, height = 300, bg = 'gray')
-        #self.canvas2.grid(row=1, column=2)
-
-        self.folder_button = Button(frame, text='Choose Folder', command = self.chooseFolder)
+        self.folder_button = Button(frame, text='Output Location', command = self.outputLocation)
         self.folder_button.grid(row=2, column=0)
 
+        self.folder_button = Button(frame, text='Files to Compare', command = self.chooseFolder)
+        self.folder_button.grid(row=2, column=1)
+
         self.images_path = ''
+        self.output_path = ''
 
         self.protocol("WM_DELETE_WINDOW", self.close)
 
@@ -48,7 +44,15 @@ class CPDApp(Tk):
             shutil.rmtree(self.images_path) 
         self.destroy()
 
+    def outputLocation(self):
+        self.output_path = filedialog.askdirectory()
+
     def chooseFolder(self):
+        # Check if output location has been set
+        if not self.output_path:
+            messagebox.showinfo('CAD Plagiarism Detection', 'Please first select an output location.')
+            return
+
         # Delete old images if they exist
         if self.images_path:
             shutil.rmtree(self.images_path)
@@ -77,22 +81,11 @@ class CPDApp(Tk):
         image2 = Image.open(path2)
         image2.show()
 
-        '''
-        img = Image.open(path)
-        self.canvas1.image = ImageTk.PhotoImage(img)
-        self.canvas1.create_image(0,0,image=self.canvas1.image, anchor = 'nw')
-        #print(self.images_path)
-        path = self.images_path + '/' + value[0]
-        img = ImageTk.PhotoImage('ball.jpg')
-        self.canvas1.create_image(20,20, anchor=NW, image = img)
-        '''
-
     def checkFileType(self, path):
         # Check file type
         kind = filetype.guess(path)
-        # print('kind: ' + str(kind.extension))
         if kind is None:
-            print('Cannot use file type')
+            messagebox.showerror('CAD Plagiarism Detection', 'Unable to determine file type.')
             return
         return kind.extension
 
@@ -118,7 +111,7 @@ class CPDApp(Tk):
                     # Must convert to jpg
                     self.convertToImage(entry)
                 else:
-                    print('File type not supported')
+                    messagebox.showerror('CAD Plagiarism Detection', 'File type not supported.')
 
     def Nmaxelements(self, list1, N): 
         final_list = []
@@ -173,24 +166,20 @@ class CPDApp(Tk):
         # To keep track of processed images
         processed = []
         # Create log file
-        #logFile = open("log_" + time.strftime("%Y-%m-%d-%H-%M-%S") + ".csv", "a")
+        log_file_path = self.output_path + '/log_' + time.strftime('%Y-%m-%d-%H-%M-%S') + '.csv'
+        log_file = open(log_file_path, 'a')
         for entry in os.listdir(self.images_path):
             if os.path.isfile(os.path.join(self.images_path, entry)):
                 for entry2 in os.listdir(self.images_path):
                     if os.path.isfile(os.path.join(self.images_path, entry2)) and entry != entry2 and frozenset((entry, entry2)) not in processed:
                         average_similarity =self.compareSubimages(entry, entry2)
 
-                        # Print average similarity
-                        #print(entry, entry2, 'comparison: ', average_similarity)    
-
                         # Write to log file    
-                        #logFile.write(entry + ',' + entry2 + ',' + str(average_similarity) + '\n')
-                        #logFile.flush()
+                        log_file.write(entry + ',' + entry2 + ',' + str(average_similarity) + '\n')
+                        log_file.flush()
 
                         # Add to average similarity list
                         inner_list = []
-                        #entry = entry.replace('jpg', '')
-                        #entry2 = entry2.replace('jpg', '')
                         inner_list.append(entry.replace('.jpg', ''))
                         inner_list.append('and')
                         inner_list.append(entry2.replace('.jpg', ''))
@@ -203,15 +192,8 @@ class CPDApp(Tk):
                         processed.append(frozenset((entry, entry2)))
          
         # Close log file
-        #logFile.close()
+        log_file.close()
 
 
 if __name__ == '__main__':
-    '''
-    root = Tk() 
-    root.geometry('500x400')
-    root.title('CAD Plagiarism Detection')
-    CPDApp(root)
-    root.mainloop()
-    '''
     CPDApp().mainloop()
