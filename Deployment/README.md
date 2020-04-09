@@ -1,6 +1,6 @@
 # Deployment Information
 1. Provide the client with the two scripts: one to install Poppler, which is needed for PDF to image comparison, and one to run the main application.
-2. Run Poppler Install executable
+2. Run Poppler Install Executable
 	
 	a. This step only needs to be done the first time the program is run
 3. Run Main App Executable
