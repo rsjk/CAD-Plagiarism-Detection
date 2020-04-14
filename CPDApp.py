@@ -5,10 +5,27 @@ from tkinter import Button, filedialog, Frame, Label, Listbox, messagebox, Tk
 import cv2
 import filetype
 import math
+import multiprocessing
 import numpy as np
 import os
 import shutil
+import threading
 import time
+
+# https://stackoverflow.com/questions/323972/is-there-any-way-to-kill-a-thread
+class StoppableThread(threading.Thread):
+    """Thread class with a stop() method. The thread itself has to check
+    regularly for the stopped() condition."""
+
+    def __init__(self,  *args, **kwargs):
+        super(StoppableThread, self).__init__(*args, **kwargs)
+        self._stop_event = threading.Event()
+
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()
 
 class CPDApp(Tk):
 
@@ -26,11 +43,14 @@ class CPDApp(Tk):
         self.sus_listbox.grid(row=1, column=0, columnspan=2)
         self.sus_listbox.bind('<<ListboxSelect>>', self.displayImage)
 
-        self.folder_button = Button(frame, text='Output Location', command = self.outputLocation)
-        self.folder_button.grid(row=2, column=0)
+        self.output_button = Button(frame, text='Output Folder', command = self.chooseOutputFolder)
+        self.output_button.grid(row=2, column=0)
 
-        self.folder_button = Button(frame, text='Files to Compare', command = self.chooseFolder)
-        self.folder_button.grid(row=2, column=1)
+        self.input_button = Button(frame, text='Input Folder', command = self.chooseInputFolder)
+        self.input_button.grid(row=2, column=1)
+
+        #self.stop_button = Button(frame, text='Stop', command = self.stopProcessing)
+        #self.stop_button.grid(row=2, column=2)
 
         self.images_path = ''
         self.output_path = ''
@@ -44,13 +64,13 @@ class CPDApp(Tk):
             shutil.rmtree(self.images_path) 
         self.destroy()
 
-    def outputLocation(self):
+    def chooseOutputFolder(self):
         self.output_path = filedialog.askdirectory()
 
-    def chooseFolder(self):
+    def chooseInputFolder(self):
         # Check if output location has been set
         if not self.output_path:
-            messagebox.showinfo('CAD Plagiarism Detection', 'Please first select an output location.')
+            messagebox.showinfo('CAD Plagiarism Detection', 'Please first select an output folder.')
             return
 
         # Delete old images if they exist
@@ -64,11 +84,9 @@ class CPDApp(Tk):
         self.images_path = self.folder_path + '/images_' + time.strftime("%Y-%m-%d-%H-%M-%S")
         os.mkdir(self.images_path)
 
-        # Convert PDFs to images if needed
-        self.convertToImages()
-
         # Compare the images
-        self.compareImages()
+        self.processing_thread = threading.Thread(target=self.compareImages, name='processing_thread', daemon=True)
+        self.processing_thread.start()
 
     def displayImage(self, event):
         w = event.widget
@@ -163,6 +181,9 @@ class CPDApp(Tk):
         return average_similarity
 
     def compareImages(self):
+        # Convert to images if needed
+        self.convertToImages()
+
         # To keep track of processed images
         processed = []
         # Create log file
