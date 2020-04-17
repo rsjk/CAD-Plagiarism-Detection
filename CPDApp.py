@@ -1,34 +1,18 @@
-from PIL import ImageTk, Image
 from pdf2image import convert_from_path
 from random import randint
 from tkinter import Button, filedialog, Frame, Label, Listbox, messagebox, Tk
 import cv2
 import filetype
 import math
-import multiprocessing
 import numpy as np
 import os
 import shutil
+import subprocess
 import threading
 import time
 
-# https://stackoverflow.com/questions/323972/is-there-any-way-to-kill-a-thread
-class StoppableThread(threading.Thread):
-    """Thread class with a stop() method. The thread itself has to check
-    regularly for the stopped() condition."""
-
-    def __init__(self,  *args, **kwargs):
-        super(StoppableThread, self).__init__(*args, **kwargs)
-        self._stop_event = threading.Event()
-
-    def stop(self):
-        self._stop_event.set()
-
-    def stopped(self):
-        return self._stop_event.is_set()
 
 class CPDApp(Tk):
-
     def __init__(self):
         Tk.__init__(self)
         self.title('CAD Plagiarism Detetction')
@@ -41,16 +25,13 @@ class CPDApp(Tk):
 
         self.sus_listbox = Listbox(frame, width=30, height=20, selectmode='single')
         self.sus_listbox.grid(row=1, column=0, columnspan=2)
-        self.sus_listbox.bind('<<ListboxSelect>>', self.displayImage)
+        self.sus_listbox.bind('<<ListboxSelect>>', self.displayFile)
 
         self.output_button = Button(frame, text='Output Folder', command = self.chooseOutputFolder)
         self.output_button.grid(row=2, column=0)
 
         self.input_button = Button(frame, text='Input Folder', command = self.chooseInputFolder)
         self.input_button.grid(row=2, column=1)
-
-        #self.stop_button = Button(frame, text='Stop', command = self.stopProcessing)
-        #self.stop_button.grid(row=2, column=2)
 
         self.images_path = ''
         self.output_path = ''
@@ -64,8 +45,10 @@ class CPDApp(Tk):
             shutil.rmtree(self.images_path) 
         self.destroy()
 
+
     def chooseOutputFolder(self):
         self.output_path = filedialog.askdirectory()
+
 
     def chooseInputFolder(self):
         # Check if output location has been set
@@ -88,16 +71,17 @@ class CPDApp(Tk):
         self.processing_thread = threading.Thread(target=self.compareImages, name='processing_thread', daemon=True)
         self.processing_thread.start()
 
-    def displayImage(self, event):
+
+    def displayFile(self, event):
+        # Display selected files from the listbox
         w = event.widget
         index = w.curselection()[0]
         value = w.get(index)
-        path1 = self.images_path + '/' + value[0] + '.jpg'
-        path2 = self.images_path + '/' + value[2] + '.jpg'
-        image = Image.open(path1)
-        image.show()
-        image2 = Image.open(path2)
-        image2.show()
+        path1 = self.folder_path + '/' + value[0] + '.pdf'
+        path2 = self.folder_path + '/' + value[2] + '.pdf'
+        subprocess.Popen([path1], shell=True)
+        subprocess.Popen([path2], shell=True)
+
 
     def checkFileType(self, path):
         # Check file type
@@ -106,6 +90,7 @@ class CPDApp(Tk):
             messagebox.showerror('CAD Plagiarism Detection', 'Unable to determine file type.')
             return
         return kind.extension
+
 
     def convertToImage(self, pdf):
         # Must convert to jpg
@@ -116,6 +101,7 @@ class CPDApp(Tk):
 
         for page in pages:   
             page.save(image_path, 'JPEG')
+
 
     def convertToImages(self):
         # Loop through directory, converting PDFs to JPGs
@@ -130,6 +116,7 @@ class CPDApp(Tk):
                     self.convertToImage(entry)
                 else:
                     messagebox.showerror('CAD Plagiarism Detection', 'File type not supported.')
+
 
     def Nmaxelements(self, list1, N): 
         final_list = []
@@ -147,6 +134,7 @@ class CPDApp(Tk):
             final_list.append((num,max1))
         
         return final_list
+
 
     def compareSubimages(self, image1, image2):
         im = cv2.imread(self.images_path + "/" + image1)
@@ -180,6 +168,7 @@ class CPDApp(Tk):
         average_similarity = average_similarity/len(BiggestContours)
         return average_similarity
 
+
     def compareImages(self):
         # Convert to images if needed
         self.convertToImages()
@@ -193,19 +182,21 @@ class CPDApp(Tk):
             if os.path.isfile(os.path.join(self.images_path, entry)):
                 for entry2 in os.listdir(self.images_path):
                     if os.path.isfile(os.path.join(self.images_path, entry2)) and entry != entry2 and frozenset((entry, entry2)) not in processed:
+                        # Find average similarity
                         average_similarity =self.compareSubimages(entry, entry2)
-
-                        # Write to log file    
-                        log_file.write(entry + ',' + entry2 + ',' + str(average_similarity) + '\n')
-                        log_file.flush()
-
-                        # Add to average similarity list
+                        
+                        # Make list to go in listbox
                         inner_list = []
                         inner_list.append(entry.replace('.jpg', ''))
                         inner_list.append('and')
                         inner_list.append(entry2.replace('.jpg', ''))
                         
+                        # 0.774 is minimum for suspected plagiarism
                         if average_similarity >= 0.774:
+                            # Write to log file 
+                            log_file.write(entry + ',' + entry2 + ',' + str(average_similarity) + '\n')
+                            log_file.flush()
+                            # Add list to listbox
                             self.sus_listbox.insert('end', inner_list)
                             self.update()
 
