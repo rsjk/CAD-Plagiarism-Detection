@@ -109,11 +109,10 @@ class CPDApp(Tk):
             path = os.path.join(self.folder_path, entry)
             if os.path.isfile(path):
                 # Check file type
-                if self.checkFileType(path) == 'jpg':
-                    shutil.copy2(path, self.images_path)
-                elif  self.checkFileType(path) == 'pdf':
+                if self.checkFileType(path) == 'pdf':
                     # Must convert to jpg
                     self.convertToImage(entry)
+                # Not a PDF
                 else:
                     messagebox.showerror('CAD Plagiarism Detection', 'File type not supported.')
 
