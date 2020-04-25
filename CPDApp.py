@@ -75,12 +75,16 @@ class CPDApp(Tk):
     def displayFile(self, event):
         # Display selected files from the listbox
         w = event.widget
-        index = w.curselection()[0]
-        value = w.get(index)
-        path1 = self.folder_path + '/' + value[0] + '.pdf'
-        path2 = self.folder_path + '/' + value[2] + '.pdf'
-        subprocess.Popen([path1], shell=True)
-        subprocess.Popen([path2], shell=True)
+        try:
+            index = w.curselection()[0]
+            value = w.get(index)
+            path1 = self.folder_path + '/' + value[0] + '.pdf'
+            path2 = self.folder_path + '/' + value[2] + '.pdf'
+            subprocess.Popen([path1], shell=True)
+            subprocess.Popen([path2], shell=True)
+        except IndexError: # If user clicks the listbox before anything is in it 
+            pass
+
 
 
     def checkFileType(self, path):
