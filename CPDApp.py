@@ -1,6 +1,6 @@
 from pdf2image import convert_from_path
 from random import randint
-from tkinter import Button, filedialog, Frame, Label, Listbox, messagebox, Tk
+from tkinter import Button, filedialog, Frame, Label, Listbox, messagebox, Scrollbar, Tk
 import cv2
 import filetype
 import math
@@ -23,9 +23,16 @@ class CPDApp(Tk):
         sus_label = Label(frame, text='Suspicious Pairs')
         sus_label.grid(row=0, column=0, columnspan=2)
 
-        self.sus_listbox = Listbox(frame, width=30, height=20, selectmode='single')
-        self.sus_listbox.grid(row=1, column=0, columnspan=2)
+        inner_frame = Frame(frame)
+        inner_frame.grid(row=1, column=0, columnspan=2)
+
+        self.sus_listbox = Listbox(inner_frame, width=30, height=20, selectmode='single')
+        self.sus_listbox.pack(side='left', fill='y')
         self.sus_listbox.bind('<<ListboxSelect>>', self.displayFile)
+        scrollbar = Scrollbar(inner_frame, orient='vertical')
+        scrollbar.config(command=self.sus_listbox.yview)
+        scrollbar.pack(side='right', fill='y')       
+        self.sus_listbox.config(yscrollcommand=scrollbar.set)
 
         self.output_button = Button(frame, text='Output Folder', command = self.chooseOutputFolder)
         self.output_button.grid(row=2, column=0)
