@@ -205,6 +205,9 @@ class CPDApp(Tk):
 
                         # Mark as processed
                         processed.append(frozenset((entry, entry2)))
+
+        # Show that comparisons are complete
+        messagebox.showinfo('CAD Plagiarism Detection', 'Done processing files.')
          
         # Close log file
         log_file.close()
