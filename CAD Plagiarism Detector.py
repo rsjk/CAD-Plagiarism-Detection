@@ -166,7 +166,7 @@ class CPDApp(Tk):
             num = num + 1
     
         #number of subsections within the images
-        subsections = 0
+        subsections = 7
         #We add 3 to the number of contours we're looking for since we need to account for the popping of the largest contour from the mask
         #and to ensure we catch all subsections that need to be compared
         BiggestContours = self.Nmaxelements(contourArea, subsections + 3)
