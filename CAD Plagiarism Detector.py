@@ -165,7 +165,11 @@ class CPDApp(Tk):
             contourArea.append((num, cv2.contourArea(i)))
             num = num + 1
     
-        BiggestContours = self.Nmaxelements(contourArea, 10)
+        #number of subsections within the images
+        subsections = 0
+        #We add 3 to the number of contours we're looking for since we need to account for the popping of the largest contour from the mask
+        #and to ensure we catch all subsections that need to be compared
+        BiggestContours = self.Nmaxelements(contourArea, subsections + 3)
         #pop the biggest contour which would the outline of the mask
         BiggestContours.pop(0)
 
