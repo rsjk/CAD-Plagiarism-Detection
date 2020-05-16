@@ -61,18 +61,24 @@ class CPDApp(Tk):
 
         self.subsection_label = Label(frame, text='Subsections:')
         self.subsection_label.grid(row=3, column=0, sticky='w', pady=(3,0))
-        
+
         self.subsection_entry = Entry(frame, width=15)
         self.subsection_entry.grid(row=3, column=1, sticky ='w', pady=(3,0))
 
+        self.log_name_label = Label(frame, text='Output File Name:')
+        self.log_name_label.grid(row=4, column=0, sticky='w', pady=(3,0))
+
+        self.log_name_entry = Entry(frame, width=15)
+        self.log_name_entry.grid(row=4, column=1, sticky ='w', pady=(3,0))        
+
         self.input_button = Button(frame, text='Input Folder', width=12, command = self.chooseInputFolder)
-        self.input_button.grid(row=4, column=0, sticky='w', pady=(3,0))
+        self.input_button.grid(row=5, column=0, sticky='w', pady=(3,0))
 
         self.output_button = Button(frame, text='Output Folder', width=12, command = self.chooseOutputFolder)
-        self.output_button.grid(row=4, column=1, sticky='w', pady=(3,0))
+        self.output_button.grid(row=5, column=1, sticky='w', pady=(3,0))
 
         self.start_button = Button(frame, text = 'Start', width=12, command = self.start)
-        self.start_button.grid(row=5, column=0, columnspan=2, pady=(3,0))
+        self.start_button.grid(row=6, column=0, columnspan=2, pady=(3,0))
 
         self.output_path = '' # Path to where the log will be placed
         self.input_path = ''  # Path to input files
@@ -94,7 +100,7 @@ class CPDApp(Tk):
         self.sus_listbox.delete(0, 'end')
 
         # Check that user provided input
-        if (self.subsection_entry.get() == '') or (not self.output_path) or (not self.input_path):
+        if (self.subsection_entry.get() == '') or (self.log_name_entry.get() == '')  or (not self.output_path) or (not self.input_path):
             messagebox.showinfo('CAD Plagiarism Detector', 'Please provide input needed for processing.')
             return
 
@@ -110,6 +116,7 @@ class CPDApp(Tk):
         self.input_button['state'] = DISABLED
         self.start_button['state'] = DISABLED
         self.subsection_entry['state'] = DISABLED
+        self.log_name_entry['state'] = DISABLED
         self.progress_bar.grid()
 
         # Make path to images folder. Tag on date and time for uniqueness.
@@ -265,6 +272,7 @@ class CPDApp(Tk):
             self.input_button['state'] = NORMAL
             self.start_button['state'] = NORMAL
             self.subsection_entry['state'] = NORMAL
+            self.log_name_entry['state'] = NORMAL
             return
 
         # Number of files in self.file_count
@@ -275,7 +283,7 @@ class CPDApp(Tk):
         processed = []
 
         # Create log file
-        log_file_path = self.output_path + '/log_' + time.strftime('%Y-%m-%d-%H-%M-%S') + '.csv'
+        log_file_path = self.output_path + '/' + str(self.log_name_entry.get()) + '_' + time.strftime('%Y-%m-%d-%H-%M-%S') + '.csv'
         log_file = open(log_file_path, 'a')
         
         # Process the files
