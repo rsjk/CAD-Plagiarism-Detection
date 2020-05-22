@@ -1,6 +1,6 @@
 from pdf2image import convert_from_path
 from random import randint
-from tkinter import Button, filedialog, Entry, Frame, Label, Listbox, messagebox, Scrollbar, Tk, DISABLED, NORMAL
+from tkinter import Button, filedialog, Entry, Frame, Label, Listbox, messagebox, Scale, Scrollbar, Tk
 from tkinter.ttk import Progressbar
 import cv2
 import filetype
@@ -23,7 +23,7 @@ class CPDApp(Tk):
         Tk.__init__(self)
         self.title('CAD Plagiarism Detetctor')
         
-        h = 450
+        h = 480
         w = 400
 
         # Get screen height and width
@@ -42,14 +42,14 @@ class CPDApp(Tk):
         frame.pack()
 
         sus_label = Label(frame, text='Suspicious Pairs')
-        sus_label.grid(row=0, column=0, columnspan=2)
+        sus_label.grid(row=0, column=1)
 
         self.progress_bar = Progressbar(frame, orient='horizontal', length=100, mode='determinate')
-        self.progress_bar.grid(row=1, column=0, columnspan=2, pady=(0,3))
+        self.progress_bar.grid(row=1, column=1, pady=(0,3))
         self.progress_bar.grid_remove()
 
         inner_frame = Frame(frame)
-        inner_frame.grid(row=2, column=0, columnspan=2)
+        inner_frame.grid(row=2, column=0, columnspan=3)
 
         self.sus_listbox = Listbox(inner_frame, width=40, height=15, selectmode='single')
         self.sus_listbox.pack(side='left', fill='y')
@@ -59,29 +59,36 @@ class CPDApp(Tk):
         scrollbar.pack(side='right', fill='y')
         self.sus_listbox.config(yscrollcommand=scrollbar.set)
 
-        self.mask_button = Button(frame, text='Mask', width=10, command = self.chooseMask)
-        self.mask_button.grid(row=3, column=0, columnspan=2, pady=(3,0))
+        self.mask_button = Button(frame, text='Mask', width=12, command = self.chooseMask)
+        self.mask_button.grid(row=3, column=0, pady=(3,0))
 
-        self.subsection_label = Label(frame, text='Subsections:')
-        self.subsection_label.grid(row=4, column=0, sticky='w', pady=(3,0))
+        self.input_button = Button(frame, text='Input Folder', width=12, command = self.chooseInputFolder)
+        self.input_button.grid(row=3, column=1, pady=(3,0))
 
-        self.subsection_entry = Entry(frame, width=20)
-        self.subsection_entry.grid(row=4, column=1, sticky ='w', pady=(3,0))
+        self.output_button = Button(frame, text='Output Folder', width=12, command = self.chooseOutputFolder)
+        self.output_button.grid(row=3, column=2, pady=(3,0))
 
-        self.log_name_label = Label(frame, text='Output File Name:')
-        self.log_name_label.grid(row=5, column=0, sticky='w', pady=(3,0))
+        subsection_label = Label(frame, text='Subsections:')
+        subsection_label.grid(row=4, column=0, columnspan=2, pady=(3,0))
 
-        self.log_name_entry = Entry(frame, width=20)
-        self.log_name_entry.grid(row=5, column=1, sticky ='w', pady=(3,0))        
+        self.subsection_entry = Entry(frame, width=12)
+        self.subsection_entry.grid(row=4, column=1, columnspan=2, pady=(3,0))
 
-        self.input_button = Button(frame, text='Input Folder', width=17, command = self.chooseInputFolder)
-        self.input_button.grid(row=6, column=0, sticky='w', pady=(3,0))
+        log_name_label = Label(frame, text='Output File Name:')
+        log_name_label.grid(row=5, column=0, columnspan=2, pady=(3,0))
 
-        self.output_button = Button(frame, text='Output Folder', width=17, command = self.chooseOutputFolder)
-        self.output_button.grid(row=6, column=1, sticky='w', pady=(3,0))
+        self.log_name_entry = Entry(frame, width=12)
+        self.log_name_entry.grid(row=5, column=1, columnspan=2, pady=(3,0))
 
-        self.start_button = Button(frame, text = 'Start', width=10, command = self.start)
-        self.start_button.grid(row=7, column=0, columnspan=2, pady=(3,0))
+        slider_label = Label(frame, text= 'Sensitivity')
+        slider_label.grid(row=7, column=1, pady=(3,0))
+
+        self.slider = Scale(frame, from_=0.7, to=0.98, orient='horizontal', resolution=0.001)
+        self.slider.set(0.774)
+        self.slider.grid(row=8, column=1, pady=(3,0))
+
+        self.start_button = Button(frame, text = 'Start', width=12, command = self.start)
+        self.start_button.grid(row=9, column=1, pady=(3,0))
 
         self.mask_path = ''   # Path to mask file
         self.output_path = '' # Path to where the log will be placed
@@ -95,6 +102,8 @@ class CPDApp(Tk):
         self.file_count = 0 # Number of files
 
         self.num_subsections = 7 # Number of subsections within the images
+
+        self.sensitivity = self.slider.get() # Sensitivity when determining plagiarism
 
         # What to do on close
         self.protocol("WM_DELETE_WINDOW", self.close)
@@ -115,8 +124,8 @@ class CPDApp(Tk):
             messagebox.showerror('CAD Plagiarism Detector', 'Subsections must be a number.')
             return
 
-        # Disable buttons and entry
-        self.toggleButtonState()
+        # Disable input
+        self.toggleInputState()
 
         # Show progress bar
         self.progress_bar.grid()
@@ -143,32 +152,36 @@ class CPDApp(Tk):
         self.destroy()
 
 
-    def toggleButtonState(self):
-        # Toggle button state to NORMAL or DISABLED
-        if self.mask_button['state'] == NORMAL:
-            self.mask_button['state'] = DISABLED
+    def toggleInputState(self):
+        # Toggle button state to 'normal' or 'disabled'
+        if self.mask_button['state'] == 'normal':
+            self.mask_button['state'] = 'disabled'
         else:
-            self.mask_button['state'] = NORMAL
-        if self.output_button['state'] == NORMAL:
-            self.output_button['state'] = DISABLED
+            self.mask_button['state'] = 'normal'
+        if self.output_button['state'] == 'normal':
+            self.output_button['state'] = 'disabled'
         else:
-            self.output_button['state'] = NORMAL
-        if self.input_button['state'] == NORMAL:
-            self.input_button['state'] = DISABLED
+            self.output_button['state'] = 'normal'
+        if self.input_button['state'] == 'normal':
+            self.input_button['state'] = 'disabled'
         else:
-            self.input_button['state'] = NORMAL
-        if self.start_button['state'] == NORMAL:
-            self.start_button['state'] = DISABLED
+            self.input_button['state'] = 'normal'
+        if self.start_button['state'] == 'normal':
+            self.start_button['state'] = 'disabled'
         else:
-            self.start_button['state'] = NORMAL
-        if self.subsection_entry['state'] == NORMAL:
-            self.subsection_entry['state'] = DISABLED
+            self.start_button['state'] = 'normal'
+        if self.subsection_entry['state'] == 'normal':
+            self.subsection_entry['state'] = 'disabled'
         else:
-            self.subsection_entry['state'] = NORMAL
-        if self.log_name_entry['state'] == NORMAL:
-            self.log_name_entry['state'] = DISABLED
+            self.subsection_entry['state'] = 'normal'
+        if self.log_name_entry['state'] == 'normal':
+            self.log_name_entry['state'] = 'disabled'
         else:
-            self.log_name_entry['state'] = NORMAL
+            self.log_name_entry['state'] = 'normal'
+        if self.slider['state'] == 'normal':
+            self.slider['state'] = 'disabled'
+        else:
+            self.slider['state'] = 'normal'
 
 
     def chooseMask(self):
@@ -189,12 +202,20 @@ class CPDApp(Tk):
         try:
             index = w.curselection()[0]
             value = w.get(index)
-            
-            path1 = self.input_path + '/' + value[0] + '_' + self.file_names[value[0]]
-            path2 = self.input_path + '/' + value[2] + '_' + self.file_names[value[2]]
+
+            path1 = ''
+            path2 = ''
+            try:
+                path1 = self.input_path + '/' + value[0] + '_' + self.file_names[value[0]]
+                path2 = self.input_path + '/' + value[2] + '_' + self.file_names[value[2]]
+            except KeyError:
+                # Listbox just contains file names
+                path1 = self.input_path + '/' + value[0]
+                path2 = self.input_path + '/' + value[2]
 
             subprocess.Popen([path1], shell=True)
             subprocess.Popen([path2], shell=True)
+
         except IndexError: # If user clicks the listbox before anything is in it 
             pass
 
@@ -235,7 +256,12 @@ class CPDApp(Tk):
                     # Make a dictionary mapping student names to the rest of the file names
                     # Needed for displaying the PDFs upon clicking a pair in the listbox
                     entry_split = entry.split('_', 1)
-                    self.file_names[entry_split[0]] = entry_split[1]
+                    try:
+                        self.file_names[entry_split[0]] = entry_split[1]
+                    except IndexError: 
+                        # File name might not be formatted in expected way with name_number.. etc.
+                        # In this case, there's no need to make a dictionary, listbox will just have the file name
+                        pass
 
                     valid = True # Set to valid
                 # Not a PDF
@@ -309,7 +335,7 @@ class CPDApp(Tk):
             messagebox.showerror('CAD Plagiarism Detector', 'Files not valid for processing.')
 
             # Enable buttons and entry again
-            self.toggleButtonState()
+            self.toggleInputState()
             return
 
         # Number of files in self.file_count
@@ -343,13 +369,18 @@ class CPDApp(Tk):
                         entry2_split = entry2.split('_', 1)
                         second_name = entry2_split[0]
 
+                        # If input isn't formatted in the expected way -- name_number_... etc, put file name in the listbox
+                        if '.jpg' in first_name:
+                            first_name = first_name.replace('.jpg', '.pdf')
+                        if '.jpg' in second_name:
+                            second_name = second_name.replace('.jpg', '.pdf')
+
                         # Add names to list
                         inner_list.append(first_name)
                         inner_list.append('and')
                         inner_list.append(second_name)
                         
-                        # 0.774 is minimum for suspected plagiarism
-                        if average_similarity >= 0.774 and average_similarity <= 0.98:
+                        if average_similarity >= self.sensitivity and average_similarity <= 0.98:
                             # Write to log file 
                             log_file.write(entry + ',' + entry2 + ',' + ', Suspicious\n')
                             log_file.flush()
@@ -376,7 +407,7 @@ class CPDApp(Tk):
         messagebox.showinfo('CAD Plagiarism Detector', 'Done processing files.')
         
         # Enable buttons and entry again
-        self.toggleButtonState()
+        self.toggleInputState()
 
         # Make progress bar invisible and reset to 0
         self.progress_bar['value'] = 0
