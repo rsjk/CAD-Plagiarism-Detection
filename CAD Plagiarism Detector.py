@@ -23,7 +23,7 @@ class CPDApp(Tk):
         Tk.__init__(self)
         self.title('CAD Plagiarism Detetctor')
         
-        h = 480
+        h = 490
         w = 400
 
         # Get screen height and width
@@ -48,24 +48,24 @@ class CPDApp(Tk):
         self.progress_bar.grid(row=1, column=1, pady=(0,3))
         self.progress_bar.grid_remove()
 
-        inner_frame = Frame(frame)
-        inner_frame.grid(row=2, column=0, columnspan=3)
+        listbox_frame = Frame(frame)
+        listbox_frame.grid(row=2, column=0, columnspan=3)
 
-        self.sus_listbox = Listbox(inner_frame, width=40, height=15, selectmode='single')
+        self.sus_listbox = Listbox(listbox_frame, width=40, height=15, selectmode='single')
         self.sus_listbox.pack(side='left', fill='y')
         self.sus_listbox.bind('<<ListboxSelect>>', self.displayFile)
-        scrollbar = Scrollbar(inner_frame, orient='vertical')
+        scrollbar = Scrollbar(listbox_frame, orient='vertical')
         scrollbar.config(command=self.sus_listbox.yview)
         scrollbar.pack(side='right', fill='y')
         self.sus_listbox.config(yscrollcommand=scrollbar.set)
 
-        self.mask_button = Button(frame, text='Mask', width=12, command = self.chooseMask)
+        self.mask_button = Button(frame, text='Mask', width=12, command=self.chooseMask)
         self.mask_button.grid(row=3, column=0, pady=(3,0))
 
-        self.input_button = Button(frame, text='Input Folder', width=12, command = self.chooseInputFolder)
+        self.input_button = Button(frame, text='Input Folder', width=12, command=self.chooseInputFolder)
         self.input_button.grid(row=3, column=1, pady=(3,0))
 
-        self.output_button = Button(frame, text='Output Folder', width=12, command = self.chooseOutputFolder)
+        self.output_button = Button(frame, text='Output Folder', width=12, command=self.chooseOutputFolder)
         self.output_button.grid(row=3, column=2, pady=(3,0))
 
         subsection_label = Label(frame, text='Subsections:')
@@ -80,15 +80,24 @@ class CPDApp(Tk):
         self.log_name_entry = Entry(frame, width=12)
         self.log_name_entry.grid(row=5, column=1, columnspan=2, pady=(3,0))
 
-        slider_label = Label(frame, text= 'Sensitivity')
-        slider_label.grid(row=7, column=1, pady=(3,0))
+        slider_label = Label(frame, text='Sensitivity')
+        slider_label.grid(row=6, column=1, pady=(3,0))
 
-        self.slider = Scale(frame, from_=0.7, to=0.98, orient='horizontal', resolution=0.001)
+        lenient_label = Label(frame, text='Lenient')
+        lenient_label.grid(row=7, column=0, pady=(3,0), sticky='e')
+
+        strict_label = Label(frame, text='Strict  ')
+        strict_label.grid(row=7, column=2, pady=(3,0), sticky='w')
+
+        self.slider = Scale(frame, from_=0.7, to=0.848, orient='horizontal', resolution=0.001, showvalue=0)
         self.slider.set(0.774)
-        self.slider.grid(row=8, column=1, pady=(3,0))
+        self.slider.grid(row=7, column=1, pady=(3,0))
 
-        self.start_button = Button(frame, text = 'Start', width=12, command = self.start)
-        self.start_button.grid(row=9, column=1, pady=(3,0))
+        self.reset_button = Button(frame, text='Reset Sensitivity', width=12, command=self.resetSensitivity)
+        self.reset_button.grid(row=8, column=1, pady=(3,0))
+
+        self.start_button = Button(frame, text='Start', width=12, command=self.start)
+        self.start_button.grid(row=9, column=1, pady=(10,0))
 
         self.mask_path = ''   # Path to mask file
         self.output_path = '' # Path to where the log will be placed
@@ -182,6 +191,10 @@ class CPDApp(Tk):
             self.slider['state'] = 'disabled'
         else:
             self.slider['state'] = 'normal'
+        if self.reset_button['state'] == 'normal':
+            self.reset_button['state'] = 'disabled'
+        else:
+            self.reset_button['state'] = 'normal'
 
 
     def chooseMask(self):
@@ -192,8 +205,13 @@ class CPDApp(Tk):
         self.output_path = filedialog.askdirectory()
 
 
-    def chooseInputFolder(self):    
+    def chooseInputFolder(self):
         self.input_path = filedialog.askdirectory()
+
+    
+    def resetSensitivity(self):
+        # Reset sensitivity slider to default
+        self.slider.set(0.774)
 
 
     def displayFile(self, event):
@@ -266,7 +284,7 @@ class CPDApp(Tk):
                     valid = True # Set to valid
                 # Not a PDF
                 else:
-                    messagebox.showerror('CAD Plagiarism Detector', 'File type not supported.')
+                    messagebox.showerror('CAD Plagiarism Detector', 'File type is not PDF.')
 
         # Need to have a pair to compare
         if self.file_count < 2:
@@ -359,6 +377,9 @@ class CPDApp(Tk):
 
                         # Find average similarity
                         average_similarity =self.compareSubimages(entry, entry2)
+
+                        # Get sensitivity
+                        self.sensitivity = self.slider.get() 
                         
                         # Make list to go in listbox
                         inner_list = []
