@@ -225,10 +225,11 @@ class CPDApp(Tk):
             path2 = ''
             try:
                 path1 = self.input_path + '/' + value[0] + '_' + self.file_names[value[0]]
+            except KeyError:
+                path1 = self.input_path + '/' + value[0]
+            try:
                 path2 = self.input_path + '/' + value[2] + '_' + self.file_names[value[2]]
             except KeyError:
-                # Listbox just contains file names
-                path1 = self.input_path + '/' + value[0]
                 path2 = self.input_path + '/' + value[2]
 
             subprocess.Popen([path1], shell=True)
